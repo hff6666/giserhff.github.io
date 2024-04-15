@@ -50,19 +50,50 @@
           border-color: #323232;
           border-style: solid;
         }
-        #buffer-button {
-        padding: 10px 20px;
-        background-color: #a6b7ca;
-        color: #fff;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-        }
-
-       #buffer-button:hover {
-        background-color: #a2aab1;
-      }
         
+      #provinces-filter {
+        height: 160px;
+        width: 100%;
+        visibility: hidden;
+   
+      }
+
+      .province-item {
+        width: 90%; 
+        padding: 10px; 
+        text-align: left; 
+        cursor: pointer;
+        height: auto; 
+        margin: 5px auto; 
+        border: 1px solid #ccc; 
+        border-radius: 5px; 
+        background-color: #f0f0f0; 
+      }
+
+      .province-item:focus {
+        outline: none; 
+        background-color: #ddd; 
+      }
+      .province-item:hover {
+        background-color: rgb(175, 40, 40);
+      }
+      /*.province-list {
+      list-style: none;
+      padding: 0;
+      display: none; 
+      position: absolute;
+      background-color: #873030;
+      border: 1px solid #ddd;
+    }
+    .province-item {
+      cursor: pointer;
+      padding: 5px 10px;
+      border-bottom: 1px solid #ddd;
+      transition: background-color 0.3s;
+    }
+    .province-item:hover {
+      background-color: #f0f0f0;
+    }*/
     </style>
 
     <link 
@@ -74,7 +105,8 @@
       require(["esri/Map", "esri/views/MapView", "esri/layers/FeatureLayer","esri/widgets/LayerList","esri/widgets/Legend",
          "esri/widgets/ScaleBar","esri/widgets/Search","esri/widgets/Home","esri/widgets/Compass","esri/widgets/BasemapToggle",
 	       "esri/widgets/BasemapGallery","esri/widgets/Expand","esri/views/draw/Draw","esri/Graphic","esri/geometry/Polyline",
-         "esri/geometry/Polygon","esri/geometry/Point","esri/tasks/QueryTask","esri/tasks/support/Query", "esri/widgets/Sketch"], 
+         "esri/geometry/Polygon","esri/geometry/Point","esri/tasks/QueryTask","esri/tasks/support/Query", "esri/widgets/Sketch"
+         ], 
         function(Map, MapView,FeatureLayer,LayerList,Legend,ScaleBar,Search,Home,Compass,BasemapToggle,BasemapGallery,Expand,
           Draw,Graphic,Polyline, Polygon,Point,QueryTask,Query,Sketch){
             
@@ -101,7 +133,7 @@
         var flayer1 = new FeatureLayer({
           url: "https://www.geosceneonline.cn/server/rest/services/Hosted/省级行政区hff/FeatureServer",
           title: "省级行政区图层",
-          outfield: ["疫区num"],
+          outfields: ["疫区num"],
           popupTemplate: tankuang // 设置弹出窗口模板
         }); 
 
@@ -201,6 +233,36 @@
         });
         view.ui.add(expand2, "top-right");
 
+        const provincesNodes = document.querySelectorAll(`.province-item`);
+        const provincesElement = document.getElementById("provinces-filter");
+        provincesElement.addEventListener("click", filterByProvince);
+        function filterByProvince(event) {
+          const selectedProvince = event.target.getAttribute("data-province");
+          fLayerView.filter = {
+            where: "所在省份 = '" + selectedProvince + "'"
+          };
+        }
+        
+        view.whenLayerView(flayer).then((layerView) => {
+          fLayerView = layerView;
+          provincesElement.style.visibility = "visible";
+          const provincesExpand = new Expand({
+            view: view,
+            content: selectProvinces,//provincesElement,
+            expandIcon: "filter",
+            group: "bottom-left",
+            expanded: false
+          });
+          reactiveUtils.when(
+            () => !provincesExpand.expanded,
+            () => {
+              fLayerView.filter = null;
+            }
+          );
+
+
+          //view.ui.add(provincesExpand, "bottom-left");
+        });
 /*
         view.on("click", function (event) {
         const clickPoint = event.mapPoint;
@@ -270,8 +332,8 @@
       view.ui.add("point-button", "top-left");//添加绘制面按钮，自定义UI
       view.ui.add("line-button", "top-left");//添加绘制线按钮，自定义UI
       view.ui.add("area-button", "top-left");//添加绘制面按钮，自定义UI
-      
-      view.ui.add("buffer-button", "top-left");//添加绘制面按钮，自定义UI
+      view.ui.add("provinces-filter", "botten-left");
+      //view.ui.add("buffer-button", "top-left");//添加绘制面按钮，自定义UI
 
         view.when(function () {
             var draw = new Draw({
@@ -547,7 +609,7 @@
         
 
     });
-        
+
     </script>
     
   </head>
@@ -558,9 +620,6 @@
     <div id="gallery-node" class="esri-widget"></div>
     <div id="viewDiv"></div>
     <div id="basemapGalleryDiv"></div>
-    <div>  <button id="buffer-button" class="esri-widget esri-widget--button esri-interactive" title="缓冲区查询">
-      <span class="esri-icon-polygon"></span> 
-    </button></div>
     <div id="divShowResult"></div>
     <div id="line-button" class="esri-widget esri-widget--button esri-interactive" title="画线">
       <span class="esri-icon-polyline"></span>
@@ -571,5 +630,25 @@
     <div id="point-button" class="esri-widget esri-widget--button esri-interactive" title="画点">
       <span class="esri-icon-radio-checked"></span>
     </div>
+    <div id="provinces-filter" class="esri-widget"><span class="esri-icon-filter"></span>
+      <div class="province-item visible-province" data-province="吉林省">吉林省</div>
+      <div class="province-item visible-province" data-province="四川省">四川省</div>
+      <div class="province-item visible-province" data-province="安徽省">安徽省</div>
+      <div class="province-item visible-province" data-province="山东省">山东省</div>
+      <div class="province-item visible-province" data-province="广东省">广东省</div>
+      <div class="province-item visible-province" data-province="广西壮族自治区">广西壮族自治区</div>
+      <div class="province-item visible-province" data-province="福建省">福建省</div>
+      <div class="province-item visible-province" data-province="江苏省">江苏省</div>
+      <div class="province-item visible-province" data-province="江西省">江西省</div>
+      <div class="province-item visible-province" data-province="河南省">湖南省</div>
+      <div class="province-item visible-province" data-province="浙江省">浙江省</div>
+      <div class="province-item visible-province" data-province="湖北省">湖北省</div>
+      <div class="province-item visible-province" data-province="湖南省">湖南省</div>
+      <div class="province-item visible-province" data-province="甘肃省">甘肃省</div>
+      <div class="province-item visible-province" data-province="贵州省">贵州省</div>
+      <div class="province-item visible-province" data-province="辽宁省">辽宁省</div>
+      <div class="province-item visible-province" data-province="重庆市">重庆市</div>
+      <div class="province-item visible-province" data-province="陕西省">陕西省</div>
+      </div>
   </body>
 </html>
